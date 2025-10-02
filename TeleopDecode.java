@@ -19,7 +19,7 @@ public class TeleopDecode extends LinearOpMode {
         within the Hardware Map of the Driver's Hub.
          */
 
-        leftFrontDrive = hardwareMap.get(DcMotor.class,"LeftFrontDrive");
+        leftFrontDrive = hardwareMap.get(DcMotor.class,"leftFrontDrive");
         leftRearDrive = hardwareMap.get(DcMotor.class,"leftRearDrive");
         rightFrontDrive = hardwareMap.get(DcMotor.class,"rightFrontDrive");
         rightRearDrive = hardwareMap.get(DcMotor.class,"rightRearDrive");
