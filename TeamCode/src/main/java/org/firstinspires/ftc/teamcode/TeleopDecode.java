@@ -18,9 +18,10 @@ public class TeleopDecode extends LinearOpMode {
 
     // Here's where we declare the operational motors:
 
-    private DcMotor wilmerClimberLeft = null;
-    private DcMotor jhoandryClimberRight = null;
+//    private DcMotor wilmerClimberLeft = null;
+//    private DcMotor jhoandryClimberRight = null;
     private DcMotor shooter = null;
+    private DcMotor head = null;
 
 
     // Here's where we declare the operational Servos
@@ -33,8 +34,8 @@ public class TeleopDecode extends LinearOpMode {
     final int HOME_POSITION = 10;
     final int PARK_POSITION = 2000;
 
-    int wilmerPosition = HOME_POSITION;
-    int jhoandryPosition = HOME_POSITION;
+//    int wilmerPosition = HOME_POSITION;
+//    int jhoandryPosition = HOME_POSITION;
 
     @Override
     public void runOpMode () {
@@ -43,13 +44,14 @@ public class TeleopDecode extends LinearOpMode {
         within the Hardware Map of the Driver's Hub.
          */
 
-        leftFrontDrive = hardwareMap.get(DcMotor.class,"LeftFrontDrive");
+        leftFrontDrive = hardwareMap.get(DcMotor.class,"leftFrontDrive");
         leftRearDrive = hardwareMap.get(DcMotor.class,"leftRearDrive");
         rightFrontDrive = hardwareMap.get(DcMotor.class,"rightFrontDrive");
         rightRearDrive = hardwareMap.get(DcMotor.class,"rightRearDrive");
-        wilmerClimberLeft = hardwareMap.get(DcMotor.class,"wilmerClimberLeft");
-        jhoandryClimberRight = hardwareMap.get(DcMotor.class,"jhoandryClimbeRight");
+//        wilmerClimberLeft = hardwareMap.get(DcMotor.class,"wilmerClimberLeft");
+//        jhoandryClimberRight = hardwareMap.get(DcMotor.class,"jhoandryClimbeRight");
         shooter = hardwareMap.get(DcMotor.class,"shooter");
+        head = hardwareMap.get(DcMotor.class,"head");
 
         // We'd be doing the same thing here, but for the servos:
 
@@ -68,26 +70,30 @@ public class TeleopDecode extends LinearOpMode {
 
         // Here we set directions for the parking climbers:
 
-        wilmerClimberLeft.setDirection(DcMotor.Direction.FORWARD);
-        jhoandryClimberRight.setDirection(DcMotor.Direction.FORWARD);
+//        wilmerClimberLeft.setDirection(DcMotor.Direction.FORWARD);
+//        jhoandryClimberRight.setDirection(DcMotor.Direction.FORWARD);
 
         // Here we set the directions for the intakes:
 
         intake.setDirection(CRServo.Direction.FORWARD);
-        secondIntake.setDirection(CRServo.Direction.FORWARD);
+        secondIntake.setDirection(CRServo.Direction.REVERSE);
+
+        // Here's where we set the direction of the shooter's motor:
+
+        head.setDirection(DcMotor.Direction.FORWARD);
 
         // Here's where we configure the Zero Power Behavior for the Climbers:
 
-        wilmerClimberLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        jhoandryClimberRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+//        wilmerClimberLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+//        jhoandryClimberRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         // Here we program the climbers' encoders:
 
-        wilmerClimberLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        wilmerClimberLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        jhoandryClimberRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        jhoandryClimberRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//        wilmerClimberLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//        wilmerClimberLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//
+//        jhoandryClimberRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//        jhoandryClimberRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         waitForStart();
 
@@ -121,7 +127,46 @@ public class TeleopDecode extends LinearOpMode {
 
             if(gamepad1.a) {
                 intake.setPower(1);
+                secondIntake.setPower(1);
             }
+
+            else if(gamepad1.right_trigger > 0.2) {
+                intake.setPower(1);
+                secondIntake.setPower(1);
+            }
+            else if (gamepad1.left_trigger > 0.2) {
+                shooter.setPower(1);
+            }
+            else if (gamepad1.left_bumper) {
+                head.setPower(0.2);
+            }
+            else if (gamepad1.right_bumper) {
+                head.setPower(0.2);
+            }
+            else {
+                shooter.setPower(0);
+                intake.setPower(0);
+                secondIntake.setPower(0);
+                head.setPower(0);
+            }
+
+//            if(gamepad1.right_bumper) {
+//                wilmerPosition = PARK_POSITION;
+//                jhoandryPosition = PARK_POSITION;
+//            }
+//            else if(gamepad1.left_bumper) {
+//                wilmerPosition = HOME_POSITION;
+//                jhoandryPosition = HOME_POSITION;
+//            }
+//
+//            wilmerClimberLeft.setTargetPosition(wilmerPosition);
+//            wilmerClimberLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+//            wilmerClimberLeft.setPower(0.4);
+//
+//            jhoandryClimberRight.setTargetPosition(jhoandryPosition);
+//            jhoandryClimberRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+//            jhoandryClimberRight.setPower(0.4);
+
 
 
         }
