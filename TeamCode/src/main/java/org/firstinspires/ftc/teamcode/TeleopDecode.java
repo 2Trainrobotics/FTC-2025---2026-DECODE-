@@ -1,13 +1,25 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.IMU;
+
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+
 @TeleOp(name = "TeleopDecode", group = "FTC")
 public class TeleopDecode extends LinearOpMode {
+
+    // Here's where we declare the Limelight & IMU
+    private Limelight3A limelight = null;
 
     // Here's where we declare all of the wheels' motors
 
@@ -21,6 +33,7 @@ public class TeleopDecode extends LinearOpMode {
     private DcMotor wilmerClimberLeft = null;
     private DcMotor jhoandryClimberRight = null;
     private DcMotor shooter = null;
+    private DcMotor head = null;
 
 
     // Here's where we declare the operational Servos
@@ -33,6 +46,7 @@ public class TeleopDecode extends LinearOpMode {
     final int HOME_POSITION = 10;
     final int PARK_POSITION = 2000;
 
+
     int wilmerPosition = HOME_POSITION;
     int jhoandryPosition = HOME_POSITION;
 
@@ -43,18 +57,25 @@ public class TeleopDecode extends LinearOpMode {
         within the Hardware Map of the Driver's Hub.
          */
 
-        leftFrontDrive = hardwareMap.get(DcMotor.class,"LeftFrontDrive");
+        leftFrontDrive = hardwareMap.get(DcMotor.class,"leftFrontDrive");
         leftRearDrive = hardwareMap.get(DcMotor.class,"leftRearDrive");
         rightFrontDrive = hardwareMap.get(DcMotor.class,"rightFrontDrive");
         rightRearDrive = hardwareMap.get(DcMotor.class,"rightRearDrive");
-        wilmerClimberLeft = hardwareMap.get(DcMotor.class,"wilmerClimberLeft");
-        jhoandryClimberRight = hardwareMap.get(DcMotor.class,"jhoandryClimbeRight");
+        jhoandryClimberRight = hardwareMap.get(DcMotor.class,"rightClimber");
+        wilmerClimberLeft = hardwareMap.get(DcMotor.class,"leftClimber");
         shooter = hardwareMap.get(DcMotor.class,"shooter");
+        head = hardwareMap.get(DcMotor.class,"head");
 
         // We'd be doing the same thing here, but for the servos:
 
         intake = hardwareMap.get(CRServo.class,"intake");
         secondIntake = hardwareMap.get(CRServo.class,"secondIntake");
+
+        // Here's where we configure the Limelight and IMU hardwareMap setups:
+
+        limelight = hardwareMap.get(Limelight3A.class,"limelight");
+        limelight.pipelineSwitch(1); // april tag #20 & #24 pipeline
+
 
 
         /* Here's where we set the directions of the wheels
@@ -69,12 +90,16 @@ public class TeleopDecode extends LinearOpMode {
         // Here we set directions for the parking climbers:
 
         wilmerClimberLeft.setDirection(DcMotor.Direction.FORWARD);
-        jhoandryClimberRight.setDirection(DcMotor.Direction.FORWARD);
+        jhoandryClimberRight.setDirection(DcMotor.Direction.REVERSE);
 
         // Here we set the directions for the intakes:
 
         intake.setDirection(CRServo.Direction.FORWARD);
-        secondIntake.setDirection(CRServo.Direction.FORWARD);
+        secondIntake.setDirection(CRServo.Direction.REVERSE);
+
+        // Here's where we set the direction of the shooter's motor:
+
+        head.setDirection(DcMotor.Direction.REVERSE);
 
         // Here's where we configure the Zero Power Behavior for the Climbers:
 
@@ -90,6 +115,8 @@ public class TeleopDecode extends LinearOpMode {
         jhoandryClimberRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         waitForStart();
+
+        limelight.start();
 
         while (opModeIsActive()) {
 
@@ -119,10 +146,57 @@ public class TeleopDecode extends LinearOpMode {
 
             // Here's where we set the commands for all of the operational components:
 
-            if(gamepad1.a) {
+
+
+            if(gamepad1.right_trigger > 0.2) {
                 intake.setPower(1);
+                secondIntake.setPower(1);
+            }
+            else if (gamepad1.left_trigger > 0.2) {
+                shooter.setPower(1);
+            }
+            else if (gamepad1.left_bumper) {
+                head.setPower(-0.2);
+            }
+            else if (gamepad1.right_bumper) {
+                head.setPower(0.2);
+            }
+            else {
+                shooter.setPower(0);
+                intake.setPower(0);
+                secondIntake.setPower(0);
+                head.setPower(0);
             }
 
+            if(gamepad1.a) {
+                wilmerPosition = PARK_POSITION;
+                jhoandryPosition = PARK_POSITION;
+            }
+            else if(gamepad1.b) {
+                wilmerPosition = HOME_POSITION;
+                jhoandryPosition = HOME_POSITION;
+            }
+
+            wilmerClimberLeft.setTargetPosition(wilmerPosition);
+            wilmerClimberLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            wilmerClimberLeft.setPower(0.4);
+
+            jhoandryClimberRight.setTargetPosition(jhoandryPosition);
+            jhoandryClimberRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            jhoandryClimberRight.setPower(0.4);
+
+            // Here's where we configure the Limelight within the loop:
+
+            LLResult llResult = limelight.getLatestResult();
+            if (llResult != null && llResult.isValid()) {
+                Pose3D botPose = llResult.getBotpose();
+                telemetry.addData("Tx", llResult.getTx());
+                telemetry.addData("Ty", llResult.getTy());
+                head.setPower(llResult.getTx()*0.15);
+                telemetry.addData("Ta", llResult.getTa());
+            }
+
+            telemetry.update();
 
         }
     }
