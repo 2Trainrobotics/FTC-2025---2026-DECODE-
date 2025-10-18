@@ -44,7 +44,7 @@ public class TeleopDecode extends LinearOpMode {
     // Here we declare the motors integer positions
 
     final int HOME_POSITION = 10;
-    final int PARK_POSITION = 2000;
+    final int PARK_POSITION = 3800;
 
 
     int wilmerPosition = HOME_POSITION;
@@ -195,6 +195,8 @@ public class TeleopDecode extends LinearOpMode {
                 head.setPower(llResult.getTx()*0.15);
                 telemetry.addData("Ta", llResult.getTa());
             }
+
+            head.setPower(0);
 
             telemetry.update();
 
