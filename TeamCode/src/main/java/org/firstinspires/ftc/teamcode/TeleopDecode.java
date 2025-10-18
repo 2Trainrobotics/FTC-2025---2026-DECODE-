@@ -40,11 +40,18 @@ public class TeleopDecode extends LinearOpMode {
 
     private CRServo intake = null;
     private CRServo secondIntake = null;
+    private Servo auxiliaryShooter = null;
+
 
     // Here we declare the motors integer positions
 
     final int HOME_POSITION = 10;
-    final int PARK_POSITION = 2000;
+    final int PARK_POSITION = 6000;
+
+    // Here we declare the double positions for the servos:
+
+    final double ARTIFACT_SHOOT = 0.5;
+    final double ARTIFACT_COLLECT = 0.0;
 
 
     int wilmerPosition = HOME_POSITION;
@@ -70,6 +77,7 @@ public class TeleopDecode extends LinearOpMode {
 
         intake = hardwareMap.get(CRServo.class,"intake");
         secondIntake = hardwareMap.get(CRServo.class,"secondIntake");
+        auxiliaryShooter = hardwareMap.get(Servo.class,"auxiliaryShooter");
 
         // Here's where we configure the Limelight and IMU hardwareMap setups:
 
@@ -97,9 +105,10 @@ public class TeleopDecode extends LinearOpMode {
         intake.setDirection(CRServo.Direction.FORWARD);
         secondIntake.setDirection(CRServo.Direction.REVERSE);
 
-        // Here's where we set the direction of the shooter's motor:
+        // Here's where we set the direction of the shooter's motor & auxiliary servo:
 
         head.setDirection(DcMotor.Direction.REVERSE);
+        auxiliaryShooter.setDirection(Servo.Direction.FORWARD);
 
         // Here's where we configure the Zero Power Behavior for the Climbers:
 
@@ -161,6 +170,12 @@ public class TeleopDecode extends LinearOpMode {
             else if (gamepad1.right_bumper) {
                 head.setPower(0.2);
             }
+            else if (gamepad1.a) {
+                auxiliaryShooter.setPosition(ARTIFACT_SHOOT);
+            }
+            else if (gamepad1.b) {
+                auxiliaryShooter.setPosition(ARTIFACT_COLLECT);
+            }
             else {
                 shooter.setPower(0);
                 intake.setPower(0);
@@ -168,11 +183,11 @@ public class TeleopDecode extends LinearOpMode {
                 head.setPower(0);
             }
 
-            if(gamepad1.a) {
+            if(gamepad1.dpad_up) {
                 wilmerPosition = PARK_POSITION;
                 jhoandryPosition = PARK_POSITION;
             }
-            else if(gamepad1.b) {
+            else if(gamepad1.dpad_down) {
                 wilmerPosition = HOME_POSITION;
                 jhoandryPosition = HOME_POSITION;
             }
@@ -192,10 +207,14 @@ public class TeleopDecode extends LinearOpMode {
                 Pose3D botPose = llResult.getBotpose();
                 telemetry.addData("Tx", llResult.getTx());
                 telemetry.addData("Ty", llResult.getTy());
-                head.setPower(llResult.getTx()*0.15);
+                head.setPower(llResult.getTx()*0.05);
                 telemetry.addData("Ta", llResult.getTa());
             }
 
+            else {
+
+                head.setPower(0);
+            }
             telemetry.update();
 
         }
