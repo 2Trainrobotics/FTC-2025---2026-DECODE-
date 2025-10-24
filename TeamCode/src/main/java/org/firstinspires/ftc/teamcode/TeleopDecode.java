@@ -49,6 +49,7 @@ public class TeleopDecode extends LinearOpMode {
     final int PARK_POSITION = 6000;
 
     // Here we declare the double positions for the servos:
+    // These pos are not official and shouldn't be used until it's fully tested.
 
     final double ARTIFACT_SHOOT = 0.5;
     final double ARTIFACT_COLLECT = 0.0;
@@ -170,6 +171,8 @@ public class TeleopDecode extends LinearOpMode {
             else if (gamepad1.right_bumper) {
                 head.setPower(0.2);
             }
+            // Its double positions aren't official and must not be used until testing concludes.
+
             else if (gamepad1.a) {
                 auxiliaryShooter.setPosition(ARTIFACT_SHOOT);
             }
