@@ -40,7 +40,7 @@ public class TeleopDecode extends LinearOpMode {
 
     private CRServo intake = null;
     private CRServo secondIntake = null;
-    private Servo auxiliaryShooter = null;
+    private Servo kicker = null;
 
 
     // Here we declare the motors integer positions
@@ -49,10 +49,9 @@ public class TeleopDecode extends LinearOpMode {
     final int PARK_POSITION = 6000;
 
     // Here we declare the double positions for the servos:
-    // These pos are not official and shouldn't be used until it's fully tested.
 
-    final double ARTIFACT_SHOOT = 0.5;
-    final double ARTIFACT_COLLECT = 0.0;
+    final double ARTIFACT_SHOOT = 1.0;
+    final double ARTIFACT_COLLECT = 0.68;
 
 
     int wilmerPosition = HOME_POSITION;
@@ -78,7 +77,7 @@ public class TeleopDecode extends LinearOpMode {
 
         intake = hardwareMap.get(CRServo.class,"intake");
         secondIntake = hardwareMap.get(CRServo.class,"secondIntake");
-        auxiliaryShooter = hardwareMap.get(Servo.class,"auxiliaryShooter");
+        kicker = hardwareMap.get(Servo.class,"auxiliaryShooter");
 
         // Here's where we configure the Limelight and IMU hardwareMap setups:
 
@@ -109,7 +108,7 @@ public class TeleopDecode extends LinearOpMode {
         // Here's where we set the direction of the shooter's motor & auxiliary servo:
 
         head.setDirection(DcMotor.Direction.REVERSE);
-        auxiliaryShooter.setDirection(Servo.Direction.FORWARD);
+        kicker.setDirection(Servo.Direction.FORWARD);
 
         // Here's where we configure the Zero Power Behavior for the Climbers:
 
@@ -171,13 +170,11 @@ public class TeleopDecode extends LinearOpMode {
             else if (gamepad1.right_bumper) {
                 head.setPower(0.2);
             }
-            // Its double positions aren't official and must not be used until testing concludes.
-
             else if (gamepad1.a) {
-                auxiliaryShooter.setPosition(ARTIFACT_SHOOT);
+                kicker.setPosition(ARTIFACT_SHOOT);
             }
             else if (gamepad1.b) {
-                auxiliaryShooter.setPosition(ARTIFACT_COLLECT);
+                kicker.setPosition(ARTIFACT_COLLECT);
             }
             else {
                 shooter.setPower(0);
@@ -210,14 +207,16 @@ public class TeleopDecode extends LinearOpMode {
                 Pose3D botPose = llResult.getBotpose();
                 telemetry.addData("Tx", llResult.getTx());
                 telemetry.addData("Ty", llResult.getTy());
-                head.setPower(llResult.getTx()*0.05);
+                head.setPower(llResult.getTx()*0.06);
                 telemetry.addData("Ta", llResult.getTa());
+
             }
 
             else {
 
                 head.setPower(0);
             }
+            telemetry.addData("Kicker Pos", kicker.getPosition());
             telemetry.update();
 
         }
