@@ -33,30 +33,44 @@ public class TeleopDecode extends LinearOpMode {
     private DcMotor wilmerClimberLeft = null;
     private DcMotor jhoandryClimberRight = null;
     private DcMotor shooter = null;
-    private DcMotor head = null;
+    private DcMotor turret = null;
 
 
     // Here's where we declare the operational Servos
 
     private CRServo intake = null;
     private CRServo secondIntake = null;
-    private Servo auxiliaryShooter = null;
+    private Servo kicker = null;
+    private Servo hood = null;
 
 
-    // Here we declare the motors integer positions
+
+    // Here we declare the Vipers' integer positions
 
     final int HOME_POSITION = 10;
     final int PARK_POSITION = 6000;
 
-    // Here we declare the double positions for the servos:
-    // These pos are not official and shouldn't be used until it's fully tested.
+    // Here we declare a pre-set position for the turret
 
-    final double ARTIFACT_SHOOT = 0.5;
-    final double ARTIFACT_COLLECT = 0.0;
+    final int TURRET_RIGHT = 30;
+    final int TURRET_LEFT = -30;
+    final int TURRET_HOME_POSITION = 0;
+
+    // Here we declare the double positions for the kicker:
+
+    final double ARTIFACT_SHOOT = 1.0;
+    final double ARTIFACT_COLLECT = 0.74;
 
 
     int wilmerPosition = HOME_POSITION;
     int jhoandryPosition = HOME_POSITION;
+    int turretPosition = TURRET_HOME_POSITION;
+
+    // Here we declare the Hood's ranges
+
+    final double LOW_RANGE_HOOD = 0.69;
+    final double MID_RANGE_HOOD = 0.85;
+    final double REAR_RANGE_HOOD = 0.96;
 
     @Override
     public void runOpMode () {
@@ -72,13 +86,16 @@ public class TeleopDecode extends LinearOpMode {
         jhoandryClimberRight = hardwareMap.get(DcMotor.class,"rightClimber");
         wilmerClimberLeft = hardwareMap.get(DcMotor.class,"leftClimber");
         shooter = hardwareMap.get(DcMotor.class,"shooter");
-        head = hardwareMap.get(DcMotor.class,"head");
+        turret = hardwareMap.get(DcMotor.class,"head");
+
 
         // We'd be doing the same thing here, but for the servos:
 
         intake = hardwareMap.get(CRServo.class,"intake");
         secondIntake = hardwareMap.get(CRServo.class,"secondIntake");
-        auxiliaryShooter = hardwareMap.get(Servo.class,"auxiliaryShooter");
+        kicker = hardwareMap.get(Servo.class,"auxiliaryShooter");
+        hood = hardwareMap.get(Servo.class,"hood");
+
 
         // Here's where we configure the Limelight and IMU hardwareMap setups:
 
@@ -108,8 +125,9 @@ public class TeleopDecode extends LinearOpMode {
 
         // Here's where we set the direction of the shooter's motor & auxiliary servo:
 
-        head.setDirection(DcMotor.Direction.REVERSE);
-        auxiliaryShooter.setDirection(Servo.Direction.FORWARD);
+        turret.setDirection(DcMotor.Direction.REVERSE);
+        kicker.setDirection(Servo.Direction.FORWARD);
+        hood.setDirection(Servo.Direction.REVERSE);
 
         // Here's where we configure the Zero Power Behavior for the Climbers:
 
@@ -158,35 +176,62 @@ public class TeleopDecode extends LinearOpMode {
 
 
 
-            if(gamepad1.right_trigger > 0.2) {
-                intake.setPower(1);
-                secondIntake.setPower(1);
-            }
-            else if (gamepad1.left_trigger > 0.2) {
+
+
+            if (gamepad2.left_trigger > 0.2) {
                 shooter.setPower(1);
             }
-            else if (gamepad1.left_bumper) {
-                head.setPower(-0.2);
+            else if (gamepad2.a) {
+                shooter.setPower(0.55);
             }
-            else if (gamepad1.right_bumper) {
-                head.setPower(0.2);
-            }
-            // Its double positions aren't official and must not be used until testing concludes.
 
-            else if (gamepad1.a) {
-                auxiliaryShooter.setPosition(ARTIFACT_SHOOT);
+            else if (gamepad2.b) {
+                shooter.setPower(0.68);
             }
-            else if (gamepad1.b) {
-                auxiliaryShooter.setPosition(ARTIFACT_COLLECT);
+
+            else if (gamepad2.y) {
+                shooter.setPower(0.85);
             }
+
+
+
             else {
                 shooter.setPower(0);
-                intake.setPower(0);
-                secondIntake.setPower(0);
-                head.setPower(0);
+            }
+            if (gamepad2.left_bumper) {
+                turret.setPower(-0.2);
             }
 
-            if(gamepad1.dpad_up) {
+            else if (gamepad2.right_bumper) {
+                turret.setPower(0.2);
+            }
+
+            else {
+                turret.setPower(0);
+            }
+            if (gamepad2.right_trigger > 0.2) {
+                secondIntake.setPower(1);
+            }
+
+            else {
+                secondIntake.setPower(0);
+            }
+            if(gamepad1.a) {
+                hood.setPosition(LOW_RANGE_HOOD);
+            }
+
+            else if(gamepad1.b) {
+                hood.setPosition(MID_RANGE_HOOD);
+            }
+
+            else if(gamepad1.y) {
+                hood.setPosition(REAR_RANGE_HOOD);
+            }
+            else if(gamepad1.right_trigger > 0.2) {
+                intake.setPower(1);
+            }
+
+            else if(gamepad1.dpad_up) {
                 wilmerPosition = PARK_POSITION;
                 jhoandryPosition = PARK_POSITION;
             }
@@ -194,6 +239,10 @@ public class TeleopDecode extends LinearOpMode {
                 wilmerPosition = HOME_POSITION;
                 jhoandryPosition = HOME_POSITION;
             }
+            else {
+                intake.setPower(0);
+            }
+
 
             wilmerClimberLeft.setTargetPosition(wilmerPosition);
             wilmerClimberLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -203,6 +252,24 @@ public class TeleopDecode extends LinearOpMode {
             jhoandryClimberRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             jhoandryClimberRight.setPower(0.4);
 
+            // if(gamepad1.left_bumper) {
+            //     turretPosition = TURRET_LEFT;
+            // }
+            // else if(gamepad1.right_bumper) {
+            //     turretPosition = TURRET_RIGHT;
+            // }
+
+            // turret.setTargetPosition(turretPosition);
+            // turret.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            // turret.setPower(0.2);
+
+            if (gamepad2.dpad_left) {
+                kicker.setPosition(ARTIFACT_SHOOT);
+            }
+            else if (gamepad2.dpad_right) {
+                kicker.setPosition(ARTIFACT_COLLECT);
+            }
+
             // Here's where we configure the Limelight within the loop:
 
             LLResult llResult = limelight.getLatestResult();
@@ -210,14 +277,16 @@ public class TeleopDecode extends LinearOpMode {
                 Pose3D botPose = llResult.getBotpose();
                 telemetry.addData("Tx", llResult.getTx());
                 telemetry.addData("Ty", llResult.getTy());
-                head.setPower(llResult.getTx()*0.05);
+                turret.setPower(llResult.getTx()*0.048);
                 telemetry.addData("Ta", llResult.getTa());
+
             }
 
             else {
 
-                head.setPower(0);
+                turret.setPower(0);
             }
+            telemetry.addData("Kicker Pos", kicker.getPosition());
             telemetry.update();
 
         }
