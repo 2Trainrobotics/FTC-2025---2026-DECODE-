@@ -109,6 +109,10 @@ public class Decode extends LinearOpMode {
         wilmerLeftClimber.setDirection(DcMotor.Direction.FORWARD);
         jhoandryRightClimber.setDirection(DcMotor.Direction.REVERSE);
 
+        // Here we set the direction for the Second Intake
+
+        secondIntake.setDirection(DcMotor.Direction.REVERSE);
+
 
         // Here's where we program the climbers' encoders
 
