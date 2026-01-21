@@ -1,12 +1,18 @@
 package org.firstinspires.ftc.teamcode;
 
 
+import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
+
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
 @TeleOp(name = "Decode", group = "FTC")
 public class Decode extends LinearOpMode {
@@ -14,7 +20,9 @@ public class Decode extends LinearOpMode {
     // Limelight Camera located in front of the robot:
 
     private Limelight3A limelight = null;
+    private IMU imu;
 
+    private double distance;
     // Here we declare all Mecanum Drive Motors"
 
     private DcMotor leftFront = null;
@@ -92,7 +100,9 @@ public class Decode extends LinearOpMode {
 
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.pipelineSwitch(1); // april tag #20 & #24 pipeline
-
+        RevHubOrientationOnRobot revHubOrientationOnRobot = new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.DOWN,
+                RevHubOrientationOnRobot.UsbFacingDirection.DOWN);
+        imu.initialize(new IMU.Parameters(revHubOrientationOnRobot));
 
         /*Here, we set the direction of the Mecanum wheels to make
         sure they're moving forward relative to their installed
@@ -231,7 +241,21 @@ public class Decode extends LinearOpMode {
             jhoandryRightClimber.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             jhoandryRightClimber.setPower(0.4);
 
+            // Limelight Data Gathering
 
+            YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
+            limelight.updateRobotOrientation(orientation.getYaw());
+            LLResult llResult = limelight.getLatestResult();
+            if (llResult != null && llResult.isValid()) {
+                Pose3D botPose = llResult.getBotpose_MT2();
+                telemetry.addData("Calculated Sitance", distance);
+                telemetry.addData("Tx", llResult.getTx());
+                telemetry.addData("Ty",llResult.getTy());
+                telemetry.addData("Ta",llResult.getTa());
+                telemetry.addData("Botpose",botPose.toString());
+            }
+
+            telemetry.update();
         }
 
     }
