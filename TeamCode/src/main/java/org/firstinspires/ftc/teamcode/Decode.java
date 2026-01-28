@@ -39,7 +39,7 @@ public class Decode extends LinearOpMode {
 
     // Here we declare the subsystems' servos:
 
-    private Servo turret = null;
+    private CRServo turret = null;
     private CRServo intake = null;
     private Servo kicker = null;
 
@@ -92,7 +92,7 @@ public class Decode extends LinearOpMode {
 
         // Here we do the same thing, but, for the servos:
 
-        turret = hardwareMap.get(Servo.class, "turret");
+        turret = hardwareMap.get(CRServo.class, "turret");
         intake = hardwareMap.get(CRServo.class, "intake");
         kicker = hardwareMap.get(Servo.class, "kicker");
 
@@ -100,9 +100,9 @@ public class Decode extends LinearOpMode {
 
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.pipelineSwitch(1); // april tag #20 & #24 pipeline
-        RevHubOrientationOnRobot revHubOrientationOnRobot = new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.DOWN,
-                RevHubOrientationOnRobot.UsbFacingDirection.DOWN);
-        imu.initialize(new IMU.Parameters(revHubOrientationOnRobot));
+//        RevHubOrientationOnRobot revHubOrientationOnRobot = new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.DOWN,
+//                RevHubOrientationOnRobot.UsbFacingDirection.DOWN);
+//        imu.initialize(new IMU.Parameters(revHubOrientationOnRobot));
 
         /*Here, we set the direction of the Mecanum wheels to make
         sure they're moving forward relative to their installed
@@ -175,10 +175,10 @@ public class Decode extends LinearOpMode {
                 jhoandryPosition = HOME_POSITION;
             }
             if (gamepad1.left_bumper) {
-                turret.setPosition(LONG_RANGE_LEFT);
+                turret.setPower(-0.5);
             }
             else if (gamepad1.right_bumper) {
-                turret.setPosition(LONG_RANGE_RIGHT);
+                turret.setPower(0.5);
             }
 
             if (gamepad1.left_trigger > 0.3) {
@@ -230,8 +230,8 @@ public class Decode extends LinearOpMode {
                 turretPosition -= turretIncrement;
             }
 
-            turretPosition = Math.max(0, Math.min(1, turretPosition));
-            turret.setPosition(turretPosition);
+//            turretPosition = Math.max(0, Math.min(1, turretPosition));
+//            turret.setPosition(turretPosition);
 
             wilmerLeftClimber.setTargetPosition(wilmerPosition);
             wilmerLeftClimber.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -243,8 +243,8 @@ public class Decode extends LinearOpMode {
 
             // Limelight Data Gathering
 
-            YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
-            limelight.updateRobotOrientation(orientation.getYaw());
+//            YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
+//            limelight.updateRobotOrientation(orientation.getYaw());
             LLResult llResult = limelight.getLatestResult();
             if (llResult != null && llResult.isValid()) {
                 Pose3D botPose = llResult.getBotpose_MT2();
