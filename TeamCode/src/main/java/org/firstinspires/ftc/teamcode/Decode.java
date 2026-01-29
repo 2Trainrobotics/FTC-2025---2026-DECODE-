@@ -21,6 +21,10 @@ public class Decode extends LinearOpMode {
 
     private Limelight3A limelight = null;
     private IMU imu;
+    double minTa = Double.MAX_VALUE;
+    double maxTa = 0.0;
+    long sampleStartTime = 0;
+    boolean sampling = false;
 
     private double distance;
     // Here we declare all Mecanum Drive Motors"
@@ -247,12 +251,34 @@ public class Decode extends LinearOpMode {
 //            limelight.updateRobotOrientation(orientation.getYaw());
             LLResult llResult = limelight.getLatestResult();
             if (llResult != null && llResult.isValid()) {
-                Pose3D botPose = llResult.getBotpose_MT2();
-                telemetry.addData("Calculated Sitance", distance);
+
+                double ta = llResult.getTa();
+
+                // Start sampling once
+
+                if (!sampling) {
+                    sampling = true;
+                    sampleStartTime = System.currentTimeMillis();
+                    minTa = ta;
+                    maxTa = ta;
+                }
+
+                // Sample for 1.5 seconds
+                if (System.currentTimeMillis() - sampleStartTime < 1500) {
+                    minTa = Math.min(minTa, ta);
+                    maxTa = Math.max(maxTa, ta);
+                }
+
+                double avgTa = (minTa + maxTa) / 2.0;
+
+                telemetry.addData("Calculated Distance", distance);
+                telemetry.addData("Ta Avg",avgTa);
+                telemetry.addData("Ta Min",minTa);
+                telemetry.addData("Ta Max",maxTa);
                 telemetry.addData("Tx", llResult.getTx());
                 telemetry.addData("Ty",llResult.getTy());
                 telemetry.addData("Ta",llResult.getTa());
-                telemetry.addData("Botpose",botPose.toString());
+                telemetry.addData("BotPose",llResult.getBotpose_MT2().toString());
             }
 
             telemetry.update();
