@@ -14,7 +14,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
-@TeleOp(name = "Decode", group = "FTC")
+@TeleOp(name = "DistanceTest", group = "FTC")
 public class Decode extends LinearOpMode {
 
     // Limelight Camera located in front of the robot:
@@ -251,6 +251,7 @@ public class Decode extends LinearOpMode {
 //            limelight.updateRobotOrientation(orientation.getYaw());
             LLResult llResult = limelight.getLatestResult();
             if (llResult != null && llResult.isValid()) {
+                turret.setPower(llResult.getTx()*0.048);
 
                 double ta = llResult.getTa();
 
@@ -270,18 +271,34 @@ public class Decode extends LinearOpMode {
                 }
 
                 double avgTa = (minTa + maxTa) / 2.0;
+                distance = getDistanceFromTag(avgTa);
 
                 telemetry.addData("Calculated Distance", distance);
+                telemetry.addData("Ta Avg",avgTa);
                 telemetry.addData("Ta Min",minTa);
                 telemetry.addData("Ta Max",maxTa);
                 telemetry.addData("Tx", llResult.getTx());
                 telemetry.addData("Ty",llResult.getTy());
                 telemetry.addData("Ta",llResult.getTa());
                 telemetry.addData("BotPose",llResult.getBotpose_MT2().toString());
+                if (distance > 0) {
+                    telemetry.addData("Calculated Distance (in)", distance);
+                } else {
+                    telemetry.addData("Calculated Distance", "No Tag");
+                }
+            }
+            else {
+                turret.setPower(0);
             }
 
             telemetry.update();
+        } // end while(opModeIsActive)
+    }     // end runOpMode()
+    public double getDistanceFromTag(double ta) {
+        if (ta <= 0.001) {
+            return -1; // invalid / no target
         }
-
+        double scale = 3836.092;
+        return Math.sqrt(scale / ta) *1.17;
     }
 }
