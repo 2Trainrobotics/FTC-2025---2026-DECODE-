@@ -3,28 +3,26 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
-import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
-import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
-import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
-
-@TeleOp(name = "Decode", group = "FTC")
-public class Decode extends LinearOpMode {
+@TeleOp(name = "DistanceTest", group = "FTC")
+public class DistanceTest extends LinearOpMode {
 
     // Limelight Camera located in front of the robot:
 
     private Limelight3A limelight = null;
     private IMU imu;
+    double minTa = Double.MAX_VALUE;
+    double maxTa = 0.0;
+    long sampleStartTime = 0;
+    boolean sampling = false;
 
+    private double distance;
     // Here we declare all Mecanum Drive Motors"
 
     private DcMotor leftFront = null;
@@ -36,7 +34,7 @@ public class Decode extends LinearOpMode {
 
     private DcMotor jhoandryRightClimber = null;
     private DcMotor wilmerLeftClimber = null;
-    private DcMotorEx shooter = null;
+    private DcMotor shooter = null;
     private DcMotor secondIntake = null;
 
     // Here we declare the subsystems' servos:
@@ -44,43 +42,28 @@ public class Decode extends LinearOpMode {
     private CRServo turret = null;
     private CRServo intake = null;
     private Servo kicker = null;
-    private Servo hood = null;
 
     // Here we declare the elevators' integer positions:
 
     final int HOME_POSITION = 10;
     final int PARK_POSITION = 6000;
 
+    // Here we declare pre-set double positions for the turret:
+
+    final double LONG_RANGE_RIGHT = 0.1;
+    final double LONG_RANGE_LEFT = 0.3;
+    final double TURRET_HOME_POSITION = 0.2;
 
     // Here we declare the double positions for the kicker:
 
     final double ARTIFACT_SHOOT = 1.0;
     final double ARTIFACT_COLLECT = 0.74;
-// Here we declare th Hood's positions relative to the ranges:
-    final double LOW_RANGE_HOOD = 0.25;
-    final double MID_RANGE_HOOD = 0.7;
-    final double REAR_RANGE_HOOD = 0.96;
+
 
     // Here we program the encoders by configuring them to their default home position:
 
     int wilmerPosition = HOME_POSITION;
     int jhoandryPosition = HOME_POSITION;
-
-    // Shooter Encoder Velocity - Setup:
-
-    public double highVelocity = 1500;
-    public double lowVelocity = 900;
-
-    double curTargetVelocity = highVelocity;
-
-    double F = 0;
-    double P = 0;
-
-    double[] stepSizes = {10.0, 1.0, 0.1, 0.001, 0.0001};
-
-    int stepIndex = 1;
-
-
 
     @Override
     public void runOpMode () {
@@ -95,16 +78,8 @@ public class Decode extends LinearOpMode {
         rightRear = hardwareMap.get(DcMotor.class, "rightRearDrive");
         jhoandryRightClimber = hardwareMap.get(DcMotor.class, "rightClimber");
         wilmerLeftClimber = hardwareMap.get(DcMotor.class, "leftClimber");
-        shooter = hardwareMap.get(DcMotorEx.class, "shooter");
+        shooter = hardwareMap.get(DcMotor.class, "shooter");
         secondIntake = hardwareMap.get(DcMotor.class, "secondIntake");
-
-        // Shooter Encoder Setup;
-
-        shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        shooter.setDirection(DcMotorSimple.Direction.FORWARD);
-
-        PIDFCoefficients pidfCoefficients = new PIDFCoefficients(P, 0, 0, F);
-        shooter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfCoefficients);
 
         // Here we do the same thing, but, for the servos:
 
@@ -147,7 +122,6 @@ public class Decode extends LinearOpMode {
 
         jhoandryRightClimber.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         jhoandryRightClimber.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        telemetry.addLine("Init complete");
 
         waitForStart();
 
@@ -179,48 +153,6 @@ public class Decode extends LinearOpMode {
             leftRear.setPower(leftRearPower);
             rightFront.setPower(rightFrontPower);
             rightRear.setPower(rightRearPower);
-
-            // Here we configure the shooter's commands:
-            if (gamepad2.aWasPressed()) {
-                if (curTargetVelocity == highVelocity) {
-                    curTargetVelocity = lowVelocity;
-                }
-                else {curTargetVelocity = highVelocity;
-                }
-            }
-
-            if (gamepad2.bWasPressed()) {
-                stepIndex = (stepIndex + 1) % stepSizes.length;
-            }
-
-            if (gamepad2.dpadLeftWasPressed()) {
-                F -= stepSizes[stepIndex];
-            }
-
-            if (gamepad2.dpadRightWasPressed()) {
-                F += stepSizes[stepIndex];
-            }
-
-            if(gamepad2.dpadUpWasPressed()) {
-                P += stepSizes[stepIndex];
-            }
-            if(gamepad2.dpadDownWasPressed()) {
-                P -= stepSizes[stepIndex];
-            }
-
-        // We configure PIDF coefficients
-            PIDFCoefficients pidfCoefficients = new PIDFCoefficients(P, 0, 0, F);
-            shooter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfCoefficients);
-
-            // set velocity
-            shooter.setVelocity(curTargetVelocity);
-
-            double curVelocity = shooter.getVelocity();
-            double error = curTargetVelocity - curVelocity;
-
-
-
-
 
             // Here we configure the commands for Gamepad #1:
 
@@ -263,30 +195,21 @@ public class Decode extends LinearOpMode {
             else if (gamepad2.dpad_right) {
                 kicker.setPosition(ARTIFACT_COLLECT);
             }
-//
-//            if (gamepad2.a) {
-//                shooter.setPower(0.55);
-//            }
-//
-//            else if(gamepad2.b) {
-//                shooter.setPower(0.68);
-//            }
-//
-//            else if (gamepad2.y) {
-//                shooter.setPower(0.85);
-//            }
-//
-//            else {
-//                shooter.setPower(0);
+
+            if (gamepad2.a) {
+                shooter.setPower(0.55);
             }
-            if(gamepad1.a) {
-                hood.setPosition(LOW_RANGE_HOOD);
+
+            else if(gamepad2.b) {
+                shooter.setPower(0.68);
             }
-            else if(gamepad1.b) {
-                hood.setPosition(MID_RANGE_HOOD);
+
+            else if (gamepad2.y) {
+                shooter.setPower(0.85);
             }
-            else if(gamepad1.y) {
-                hood.setPosition(REAR_RANGE_HOOD);
+
+            else {
+                shooter.setPower(0);
             }
 
 
@@ -301,21 +224,42 @@ public class Decode extends LinearOpMode {
             jhoandryRightClimber.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             jhoandryRightClimber.setPower(0.4);
 
+            // Limelight Data Gathering
 
-        // Here's where we configure the Limelight within the loop:
+//            YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
+//            limelight.updateRobotOrientation(orientation.getYaw());
             LLResult llResult = limelight.getLatestResult();
             if (llResult != null && llResult.isValid()) {
-                Pose3D botPose = llResult.getBotpose();
+
+                double ta = llResult.getTa();
+
+                // Start sampling once
+
+                if (!sampling) {
+                    sampling = true;
+                    sampleStartTime = System.currentTimeMillis();
+                    minTa = ta;
+                    maxTa = ta;
+                }
+
+                // Sample for 1.5 seconds
+                if (System.currentTimeMillis() - sampleStartTime < 1500) {
+                    minTa = Math.min(minTa, ta);
+                    maxTa = Math.max(maxTa, ta);
+                }
+
+                double avgTa = (minTa + maxTa) / 2.0;
+
+                telemetry.addData("Calculated Distance", distance);
+                telemetry.addData("Ta Avg",avgTa);
+                telemetry.addData("Ta Min",minTa);
+                telemetry.addData("Ta Max",maxTa);
                 telemetry.addData("Tx", llResult.getTx());
                 telemetry.addData("Ty",llResult.getTy());
-                turret.setPower(llResult.getTx()*0.048);
                 telemetry.addData("Ta",llResult.getTa());
+                telemetry.addData("BotPose",llResult.getBotpose_MT2().toString());
             }
 
-            else {
-                turret.setPower(0);
-            }
-            telemetry.addData("Kicker Pos", kicker.getPosition());
             telemetry.update();
         }
 
