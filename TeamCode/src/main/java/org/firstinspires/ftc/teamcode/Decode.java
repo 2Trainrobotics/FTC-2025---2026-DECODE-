@@ -254,8 +254,6 @@ public class Decode extends LinearOpMode {
 
                 double ta = llResult.getTa();
 
-                // Start sampling once
-
                 if (!sampling) {
                     sampling = true;
                     sampleStartTime = System.currentTimeMillis();
@@ -263,35 +261,36 @@ public class Decode extends LinearOpMode {
                     maxTa = ta;
                 }
 
-                // Sample for 1.5 seconds
-                if (System.currentTimeMillis() - sampleStartTime < 1500) { //
+                if (System.currentTimeMillis() - sampleStartTime < 1500) {
                     minTa = Math.min(minTa, ta);
                     maxTa = Math.max(maxTa, ta);
                 } else {
-                    // restart sampling window
-                    sampleStartTime = System.currentTimeMillis();    // The distance would keep updating without having to stop the Teleop Mode
+                    sampleStartTime = System.currentTimeMillis();
                     minTa = ta;
                     maxTa = ta;
                 }
 
                 double avgTa = (minTa + maxTa) / 2.0;
-                distance = getDistanceFromTag(avgTa); // distance is going to be the average Target Area
+                distance = getDistanceFromTag(avgTa);
 
-                telemetry.addData("Ta Avg",avgTa);
-                telemetry.addData("Ta Min",minTa);
-                telemetry.addData("Ta Max",maxTa);
+                telemetry.addData("Ta Avg", avgTa);
                 telemetry.addData("Tx", llResult.getTx());
-                telemetry.addData("Ty",llResult.getTy());
-                telemetry.addData("Ta",llResult.getTa());
-                telemetry.addData("BotPose",llResult.getBotpose_MT2().toString());
+
                 if (distance > 0) {
-                    telemetry.addData("Calculated Distance (in)", distance);
+                    telemetry.addData("Distance (in)", distance);
+                } else {
+                    telemetry.addData("Distance (in)", "No Tag");
                 }
+
+                Pose3D botPose = llResult.getBotpose_MT2();
+                telemetry.addData("BotPose", botPose != null ? botPose.toString() : "null");
             }
             else {
-                sampling = false; // Resets sampling so that the next detection starts fresh
+                sampling = false;
                 distance = -1;
+                telemetry.addData("Distance (in)", "No Tag");
             }
+
 
             telemetry.update();
         } // end while(opModeIsActive)
