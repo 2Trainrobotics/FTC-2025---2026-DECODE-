@@ -14,7 +14,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
-@TeleOp(name = "Decode", group = "FTC")
+@TeleOp(name = "prototype", group = "FTC")
 public class Decode extends LinearOpMode {
 
     // Limelight Camera located in front of the robot:
@@ -264,15 +264,19 @@ public class Decode extends LinearOpMode {
                 }
 
                 // Sample for 1.5 seconds
-                if (System.currentTimeMillis() - sampleStartTime < 1500) {
+                if (System.currentTimeMillis() - sampleStartTime < 1500) { //
                     minTa = Math.min(minTa, ta);
                     maxTa = Math.max(maxTa, ta);
+                } else {
+                    // restart sampling window
+                    sampleStartTime = System.currentTimeMillis();    // The distance would keep updating without having to stop the Teleop Mode
+                    minTa = ta;
+                    maxTa = ta;
                 }
 
                 double avgTa = (minTa + maxTa) / 2.0;
-                distance = getDistanceFromTag(avgTa);
+                distance = getDistanceFromTag(avgTa); // distance is going to be the average Target Area
 
-                telemetry.addData("Calculated Distance", distance);
                 telemetry.addData("Ta Avg",avgTa);
                 telemetry.addData("Ta Min",minTa);
                 telemetry.addData("Ta Max",maxTa);
@@ -282,19 +286,21 @@ public class Decode extends LinearOpMode {
                 telemetry.addData("BotPose",llResult.getBotpose_MT2().toString());
                 if (distance > 0) {
                     telemetry.addData("Calculated Distance (in)", distance);
-                } else {
-                    telemetry.addData("Calculated Distance", "No Tag");
                 }
+            }
+            else {
+                sampling = false; // Resets sampling so that the next detection starts fresh
+                distance = -1;
             }
 
             telemetry.update();
         } // end while(opModeIsActive)
     }     // end runOpMode()
-    public double getDistanceFromTag(double ta) {
-        if (ta <= 0.001) {
+    public double getDistanceFromTag(double ta) { // This method must be configured to run outside of the while and runOpMode
+        if (ta <= 0.001) { // Without this line, if the ta reaches 0, this line will crash.
             return -1; // invalid / no target
         }
         double scale = 3836.092;
-        return Math.sqrt(scale / ta);
+        return Math.sqrt(scale / ta) * 1.17;
     }
 }
