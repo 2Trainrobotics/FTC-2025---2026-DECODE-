@@ -1,141 +1,157 @@
 package org.firstinspires.ftc.teamcode;
 
-
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.limelightvision.LLResult;
-import com.qualcomm.hardware.limelightvision.Limelight3A;
-import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.IMU;
+
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
-@TeleOp(name = "prototype", group = "FTC")
+@Config
+@TeleOp(name = "Decode", group = "FTC")
 public class Decode extends LinearOpMode {
 
-    // Limelight Camera located in front of the robot:
-
+    // Here's where we declare the Limelight & IMU
     private Limelight3A limelight = null;
-    private IMU imu;
-    double minTa = Double.MAX_VALUE;
-    double maxTa = 0.0;
-    long sampleStartTime = 0;
-    boolean sampling = false;
 
-    private double distance;
-    // Here we declare all Mecanum Drive Motors"
+    // Here's where we declare all of the wheels' motors
 
-    private DcMotor leftFront = null;
-    private DcMotor rightFront = null;
-    private DcMotor leftRear = null;
-    private DcMotor rightRear = null;
+    private DcMotor leftFrontDrive = null;
+    private DcMotor rightFrontDrive = null;
+    private DcMotor leftRearDrive = null;
+    private DcMotor rightRearDrive = null;
 
-    // Here we declare the subsystems' motors:
+    // Here's where we declare the operational motors:
 
-    private DcMotor jhoandryRightClimber = null;
-    private DcMotor wilmerLeftClimber = null;
-    private DcMotor shooter = null;
-    private DcMotor secondIntake = null;
-
-    // Here we declare the subsystems' servos:
-
+    private DcMotor wilmerClimberLeft = null;
+    private DcMotor jhoandryClimberRight = null;
+    private DcMotorEx shooter = null;
     private CRServo turret = null;
-    private CRServo intake = null;
-    private Servo kicker = null;
 
-    // Here we declare the elevators' integer positions:
+    FtcDashboard dashboard = FtcDashboard.getInstance();
+    public Telemetry dashboardTelemetry = dashboard.getTelemetry();
+
+
+    // Here's where we declare the operational Servos
+
+    private CRServo intake = null;
+    private DcMotor secondIntake = null;
+    private Servo kicker = null;
+    private Servo hood = null;
+
+
+
+    // Here we declare the Vipers' integer positions
 
     final int HOME_POSITION = 10;
     final int PARK_POSITION = 6000;
 
-    // Here we declare pre-set double positions for the turret:
+    // Here we declare a pre-set position for the turret
 
-    final double LONG_RANGE_RIGHT = 0.1;
-    final double LONG_RANGE_LEFT = 0.3;
-    final double TURRET_HOME_POSITION = 0.2;
-
+    final int TURRET_RIGHT = 30;
+    final int TURRET_LEFT = -30;
+    final int TURRET_HOME_POSITION = 0;
+    // Shooter Encoder Speed
+    public static int targetVelocity;
     // Here we declare the double positions for the kicker:
 
     final double ARTIFACT_SHOOT = 1.0;
     final double ARTIFACT_COLLECT = 0.74;
 
-    // Here we declare the turret servo with a gradual increment mode:
-
-    final double ROTATIONAL_CLAW_STOP = 0.0;
-    final double ROTATIONAL_CLAW_CLOCKWISE = 0.9;
-    final double ROTATIONAL_CLAW_COUNTERCLOCKWISE = -ROTATIONAL_CLAW_CLOCKWISE;
-
-    // Here we program the turret servo position with its default home position:
-
-    double turretPosition = TURRET_HOME_POSITION;
-
-    // Here we program the encoders by configuring them to their default home position:
 
     int wilmerPosition = HOME_POSITION;
     int jhoandryPosition = HOME_POSITION;
+    int turretPosition = TURRET_HOME_POSITION;
+
+    // Here we declare the Hood's ranges
+
+    final double LOW_RANGE_HOOD = 0.69;
+    final double MID_RANGE_HOOD = 0.85;
+    final double REAR_RANGE_HOOD = 0.96;
 
     @Override
     public void runOpMode () {
 
-        /* Here's where we guide the class to find the different components
-        within the Hardware Map configuration:
+        /* Here's where we tell the class where to find these components
+        within the Hardware Map of the Driver's Hub.
          */
 
-        leftFront = hardwareMap.get(DcMotor.class, "leftFrontDrive");
-        leftRear = hardwareMap.get(DcMotor.class, "leftRearDrive");
-        rightFront = hardwareMap.get(DcMotor.class, "rightFrontDrive");
-        rightRear = hardwareMap.get(DcMotor.class, "rightRearDrive");
-        jhoandryRightClimber = hardwareMap.get(DcMotor.class, "rightClimber");
-        wilmerLeftClimber = hardwareMap.get(DcMotor.class, "leftClimber");
-        shooter = hardwareMap.get(DcMotor.class, "shooter");
-        secondIntake = hardwareMap.get(DcMotor.class, "secondIntake");
+        leftFrontDrive = hardwareMap.get(DcMotor.class,"leftFrontDrive");
+        leftRearDrive = hardwareMap.get(DcMotor.class,"leftRearDrive");
+        rightFrontDrive = hardwareMap.get(DcMotor.class,"rightFrontDrive");
+        rightRearDrive = hardwareMap.get(DcMotor.class,"rightRearDrive");
+        jhoandryClimberRight = hardwareMap.get(DcMotor.class,"rightClimber");
+        wilmerClimberLeft = hardwareMap.get(DcMotor.class,"leftClimber");
+        shooter = hardwareMap.get(DcMotorEx.class,"shooter");
+        turret = hardwareMap.get(CRServo.class,"turret");
 
-        // Here we do the same thing, but, for the servos:
 
-        turret = hardwareMap.get(CRServo.class, "turret");
-        intake = hardwareMap.get(CRServo.class, "intake");
-        kicker = hardwareMap.get(Servo.class, "kicker");
+        // We'd be doing the same thing here, but for the servos:
 
-        // Here's where we configure the Limelight and IMU hardwareMap Setup:
+        intake = hardwareMap.get(CRServo.class,"intake");
+        secondIntake = hardwareMap.get(DcMotor.class,"secondIntake");
+        kicker = hardwareMap.get(Servo.class,"kicker");
+        hood = hardwareMap.get(Servo.class,"hood");
 
-        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+
+        // Here's where we configure the Limelight and IMU hardwareMap setups:
+
+        limelight = hardwareMap.get(Limelight3A.class,"limelight");
         limelight.pipelineSwitch(1); // april tag #20 & #24 pipeline
-//        RevHubOrientationOnRobot revHubOrientationOnRobot = new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.DOWN,
-//                RevHubOrientationOnRobot.UsbFacingDirection.DOWN);
-//        imu.initialize(new IMU.Parameters(revHubOrientationOnRobot));
 
-        /*Here, we set the direction of the Mecanum wheels to make
-        sure they're moving forward relative to their installed
-        positions:
+
+
+        /* Here's where we set the directions of the wheels
+        to makes sure that all of them are going forward.
          */
 
-        leftFront.setDirection(DcMotor.Direction.FORWARD);
-        leftRear.setDirection(DcMotor.Direction.REVERSE);
-        rightFront.setDirection(DcMotor.Direction.FORWARD);
-        rightRear.setDirection(DcMotor.Direction.REVERSE);
+        leftFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        leftRearDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        rightRearDrive.setDirection(DcMotor.Direction.REVERSE);
 
-        // Here we set the directions for the climbers:
+        // Here we set directions for the parking climbers:
 
-        wilmerLeftClimber.setDirection(DcMotor.Direction.FORWARD);
-        jhoandryRightClimber.setDirection(DcMotor.Direction.REVERSE);
+        wilmerClimberLeft.setDirection(DcMotor.Direction.FORWARD);
+        jhoandryClimberRight.setDirection(DcMotor.Direction.REVERSE);
 
-        // Here we set the direction for the Second Intake
+        // Here we set the directions for the intakes:
 
-        secondIntake.setDirection(DcMotor.Direction.REVERSE);
+        intake.setDirection(CRServo.Direction.FORWARD);
+        secondIntake.setDirection(CRServo.Direction.REVERSE);
 
+        // Here's where we set the direction of the shooter's motor & auxiliary servo:
 
-        // Here's where we program the climbers' encoders
+        turret.setDirection(DcMotor.Direction.REVERSE);
+        kicker.setDirection(Servo.Direction.FORWARD);
+        hood.setDirection(Servo.Direction.REVERSE);
 
-        wilmerLeftClimber.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        wilmerLeftClimber.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        // Here's where we configure the Zero Power Behavior for the Climbers:
 
-        jhoandryRightClimber.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        jhoandryRightClimber.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        wilmerClimberLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        jhoandryClimberRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
+        // Here we program the climbers' encoders:
+
+        wilmerClimberLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        wilmerClimberLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        jhoandryClimberRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        jhoandryClimberRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        shooter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         waitForStart();
 
         limelight.start();
@@ -143,16 +159,16 @@ public class Decode extends LinearOpMode {
         while (opModeIsActive()) {
 
             /* Here's where we declare the meaning of the drive commands:
-            Strafe & turn - through the way on how they would be playing their roles
-            on the controller:
+            Strafe & turn into the way on how they would be playing their roles
+            on the controller.
              */
-
             double x = -gamepad1.left_stick_x;
             double y = gamepad1.left_stick_y;
             double rotation = gamepad1.right_stick_x;
+            shooter.setVelocity(targetVelocity);
 
             /* Here's where we calculate the direction of the motors
-            based on the direction of the wheels while strafing:
+            according to the direction of strafing.
              */
 
             double leftFrontPower = (x + y - rotation);
@@ -160,47 +176,103 @@ public class Decode extends LinearOpMode {
             double rightFrontPower = (x - y - rotation);
             double rightRearPower = (x + y + rotation);
 
-            // Here's where we assign the powers we declared to the motors:
+            // Here's where we assign the powers we declared to the motors
 
-            leftFront.setPower(leftFrontPower);
-            leftRear.setPower(leftRearPower);
-            rightFront.setPower(rightFrontPower);
-            rightRear.setPower(rightRearPower);
+            leftFrontDrive.setPower(leftFrontPower);
+            leftRearDrive.setPower(leftRearPower);
+            rightFrontDrive.setPower(rightFrontPower);
+            rightRearDrive.setPower(rightRearPower);
 
-            // Here we configure the commands for Gamepad #1:
+            // Here's where we set the commands for all of the operational components:
 
-            if (gamepad1.dpad_up) {
 
-                wilmerPosition = PARK_POSITION;
-                jhoandryPosition = PARK_POSITION;
-            } else if (gamepad1.dpad_down) {
 
-                wilmerPosition = HOME_POSITION;
-                jhoandryPosition = HOME_POSITION;
+
+
+//            if (gamepad2.left_trigger > 0.2) {
+//                shooter.setPower(1);
+//            }
+//            else if (gamepad2.a) {
+//                shooter.setPower(0.55);
+//            }
+//
+//            else if (gamepad2.b) {
+//                shooter.setPower(0.68);
+//            }
+//
+//            else if (gamepad2.y) {
+//                shooter.setPower(0.85);
+//            }
+
+
+
+//            else {
+//                shooter.setPower(0);
+//            }
+            if (gamepad2.left_bumper) {
+                turret.setPower(-0.2);
             }
-            if (gamepad1.left_bumper) {
-                turret.setPower(-0.5);
-            }
-            else if (gamepad1.right_bumper) {
-                turret.setPower(0.5);
+
+            else if (gamepad2.right_bumper) {
+                turret.setPower(0.2);
             }
 
-            if (gamepad1.left_trigger > 0.3) {
+            else {
+                turret.setPower(0);
+            }
+            if (gamepad2.right_trigger > 0.2) {
+                secondIntake.setPower(1);
+            }
+
+            else {
+                secondIntake.setPower(0);
+            }
+            if(gamepad1.a) {
+                hood.setPosition(LOW_RANGE_HOOD);
+            }
+
+            else if(gamepad1.b) {
+                hood.setPosition(MID_RANGE_HOOD);
+            }
+
+            else if(gamepad1.y) {
+                hood.setPosition(REAR_RANGE_HOOD);
+            }
+            else if(gamepad1.right_trigger > 0.2) {
                 intake.setPower(1);
             }
 
+            else if(gamepad1.dpad_up) {
+                wilmerPosition = PARK_POSITION;
+                jhoandryPosition = PARK_POSITION;
+            }
+            else if(gamepad1.dpad_down) {
+                wilmerPosition = HOME_POSITION;
+                jhoandryPosition = HOME_POSITION;
+            }
             else {
                 intake.setPower(0);
             }
 
-            // Here we configure the commands for Gamepad #2:
 
-            if (gamepad2.right_trigger >0.3) {
-                secondIntake.setPower(0.5);
-            }
-            else {
-                secondIntake.setPower(0);
-            }
+            wilmerClimberLeft.setTargetPosition(wilmerPosition);
+            wilmerClimberLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            wilmerClimberLeft.setPower(0.4);
+
+            jhoandryClimberRight.setTargetPosition(jhoandryPosition);
+            jhoandryClimberRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            jhoandryClimberRight.setPower(0.4);
+
+            // if(gamepad1.left_bumper) {
+            //     turretPosition = TURRET_LEFT;
+            // }
+            // else if(gamepad1.right_bumper) {
+            //     turretPosition = TURRET_RIGHT;
+            // }
+
+            // turret.setTargetPosition(turretPosition);
+            // turret.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            // turret.setPower(0.2);
 
             if (gamepad2.dpad_left) {
                 kicker.setPosition(ARTIFACT_SHOOT);
@@ -209,97 +281,29 @@ public class Decode extends LinearOpMode {
                 kicker.setPosition(ARTIFACT_COLLECT);
             }
 
-            if (gamepad2.a) {
-                shooter.setPower(0.55);
-            }
+            // Here's where we configure the Limelight within the loop:
 
-            else if(gamepad2.b) {
-                shooter.setPower(0.68);
-            }
-
-            else if (gamepad2.y) {
-                shooter.setPower(0.85);
-            }
-
-            else {
-                shooter.setPower(0);
-            }
-
-            double turretIncrement = 0.02;
-
-            if (gamepad2.left_bumper) {
-                turretPosition += turretIncrement;
-            }
-            else if (gamepad2.right_bumper) {
-                turretPosition -= turretIncrement;
-            }
-
-//            turretPosition = Math.max(0, Math.min(1, turretPosition));
-//            turret.setPosition(turretPosition);
-
-            wilmerLeftClimber.setTargetPosition(wilmerPosition);
-            wilmerLeftClimber.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            wilmerLeftClimber.setPower(0.4);
-
-            jhoandryRightClimber.setTargetPosition(jhoandryPosition);
-            jhoandryRightClimber.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            jhoandryRightClimber.setPower(0.4);
-
-            // Limelight Data Gathering
-
-//            YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
-//            limelight.updateRobotOrientation(orientation.getYaw());
             LLResult llResult = limelight.getLatestResult();
             if (llResult != null && llResult.isValid()) {
-
-                double ta = llResult.getTa();
-
-                if (!sampling) {
-                    sampling = true;
-                    sampleStartTime = System.currentTimeMillis();
-                    minTa = ta;
-                    maxTa = ta;
-                }
-
-                if (System.currentTimeMillis() - sampleStartTime < 1500) {
-                    minTa = Math.min(minTa, ta);
-                    maxTa = Math.max(maxTa, ta);
-                } else {
-                    sampleStartTime = System.currentTimeMillis();
-                    minTa = ta;
-                    maxTa = ta;
-                }
-
-                double avgTa = (minTa + maxTa) / 2.0;
-                distance = getDistanceFromTag(avgTa);
-
-                telemetry.addData("Ta Avg", avgTa);
+                Pose3D botPose = llResult.getBotpose();
                 telemetry.addData("Tx", llResult.getTx());
+                telemetry.addData("Ty", llResult.getTy());
+                turret.setPower(llResult.getTx()*0.048);
+                telemetry.addData("Ta", llResult.getTa());
 
-                if (distance > 0) {
-                    telemetry.addData("Distance (in)", distance);
-                } else {
-                    telemetry.addData("Distance (in)", "No Tag");
-                }
-
-                Pose3D botPose = llResult.getBotpose_MT2();
-                telemetry.addData("BotPose", botPose != null ? botPose.toString() : "null");
             }
+
             else {
-                sampling = false;
-                distance = -1;
-                telemetry.addData("Distance (in)", "No Tag");
+
+                turret.setPower(0);
             }
+            telemetry.addData("Kicker Pos", kicker.getPosition());
+            dashboardTelemetry.addData("Target Velocity", targetVelocity);
+            dashboardTelemetry.addData("Velocity",shooter.getVelocity());
 
-
+            dashboardTelemetry.update();
             telemetry.update();
-        } // end while(opModeIsActive)
-    }     // end runOpMode()
-    public double getDistanceFromTag(double ta) { // This method must be configured to run outside of the while and runOpMode
-        if (ta <= 0.001) { // Without this line, if the ta reaches 0, this line will crash.
-            return -1; // invalid / no target
+
         }
-        double scale = 3836.092;
-        return Math.sqrt(scale / ta) * 1.17;
     }
 }
